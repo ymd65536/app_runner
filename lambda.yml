@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  CICDHandsonLambdaFunc:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: "cicdhandsonFunc"
+      Role: !GetAtt CICDHandsonLambdaRole.Arn
+      PackageType: Image
+      Code:
+        ImageUri:
+          !Join [":", [!ImportValue CICDHandsonECRRepositoryUri, "latest"]]
+      Architectures:
+        - x86_64
+      MemorySize: 512
+      Timeout: 30
+  CICDHandsonLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole

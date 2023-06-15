@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: cicd_handson
+Parameters:
+  PjName:
+    Type: String
+    Default: cicdhandson
+Resources:
+  CICDHandsonCodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Location: !ImportValue CICDHandsonBucketName
+        Type: S3
+      Name: !Sub "${PjName}-pipeline"
+      RoleArn: !ImportValue CodePipelineIAMRoleArn
+      Stages:
+        - Actions:
+            - ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeCommit
+                Version: 1
+              Configuration:
+                RepositoryName: !ImportValue "CodeRepositoryName"
+                BranchName: main
+                PollForSourceChanges: false
+                OutputArtifactFormat: CODE_ZIP
+              Name: Source
+              Namespace: SourceVariables
+              OutputArtifacts:
+                - Name: SourceArtifact
+              Region: ap-northeast-1
+              RunOrder: 1
+          Name: Source
+        - Actions:
+            - ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !ImportValue CICDHandsonCodeBuildPj
+              InputArtifacts:
+                - Name: SourceArtifact
+              Name: Build
+              Namespace: BuildVariables
+              OutputArtifacts:
+                - Name: BuildArtifact
+              Region: ap-northeast-1
+              RunOrder: 1
+          Name: Build
+      Tags:
+        - Key: Name
+          Value: !Sub "${PjName}"
+
+  EventBridge:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: for codepipeline
+      EventPattern:
+        source:
+          - aws.codecommit
+        detail-type:
+          - "CodeCommit Repository State Change"
+        resources:
+          - !ImportValue "CodeRepositoryArn"
+        detail:
+          event:
+            - referenceCreated
+            - referenceUpdated
+          referenceType:
+            - branch
+          referenceName:
+            - main
+      Name: cicdhandson-codepipeline
+      State: ENABLED
+      Targets:
+        - Arn:
+            !Join [
+              "",
+              [
+                "arn:aws:codepipeline:ap-northeast-1:",
+                !Sub "${AWS::AccountId}:",
+                !Sub "${PjName}-pipeline",
+              ],
+            ]
+          Id: !Sub "${PjName}-pipeline"
+          RoleArn: !ImportValue EventBridgeTargetRoleArn

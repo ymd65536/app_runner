@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: cicd_handson
+Parameters:
+  PjName:
+    Type: String
+    Default: cicdhandson
+Resources:
+  # Save Artifact
+  CICDHandsonBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: "Suspended"
+      BucketName: !Sub "${PjName}-bucket-${AWS::AccountId}"
+      AccessControl: "Private"
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${PjName}"
+Outputs:
+  Arn:
+    Value: !GetAtt CICDHandsonBucket.Arn
+    Export:
+      Name: CICDHandsonBucketArn
+
+  Name:
+    Value: !Ref CICDHandsonBucket
+    Export:
+      Name: CICDHandsonBucketName

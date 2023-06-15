@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "event-bridge IAM Role"
+Parameters:
+  PjName:
+    Type: String
+    Default: cicdhandson
+Resources:
+  # EventBridge
+  EventBridgeIAMPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "codepipeline:StartPipelineExecution"
+            Resource:
+              - !Join [
+                  "",
+                  [
+                    "arn:aws:codepipeline:ap-northeast-1:",
+                    !Sub "${AWS::AccountId}:",
+                    !Sub "${PjName}-pipeline",
+                  ],
+                ]
+      ManagedPolicyName: iam-policy-eventbridge
+  EventBridgeIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - !Ref EventBridgeIAMPolicy
+      RoleName: iam-role-eventbridge
+      Tags:
+        - Key: Name
+          Value: !Sub "${PjName}"
+Outputs:
+  EventBridgeIAMRole:
+    Value: !GetAtt EventBridgeIAMRole.Arn
+    Export:
+      Name: EventBridgeTargetRoleArn

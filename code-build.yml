@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: cicd_handson
+Parameters:
+  PjName:
+    Type: String
+    Default: cicdhandson
+Resources:
+  # CodeBuild
+  CICDHandsonCodeBuildPj:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Description: CodeBuild
+      Environment:
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: !Ref AWS::AccountId
+          - Name: IMAGE_REPO_NAME
+            Type: PLAINTEXT
+            Value: !Sub "${PjName}"
+          - Name: IMAGE_TAG
+            Type: PLAINTEXT
+            Value: latest
+
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+      Name: !Sub "${PjName}"
+      ServiceRole: !ImportValue CodeBuildRoleName
+      Source:
+        BuildSpec: buildspec.yml
+        Type: CODEPIPELINE
+      Tags:
+        - Key: Name
+          Value: cicd_handson
+  # CloudWatch Logs
+  CICDHandsonCloudWatchLogs:
+    Type: "AWS::Logs::LogGroup"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub "${PjName}"
+      RetentionInDays: 60
+      Tags:
+        - Key: Name
+          Value: !Sub "${PjName}"
+
+Outputs:
+  CodeBuildPj:
+    Value: !Ref CICDHandsonCodeBuildPj
+    Export:
+      Name: CICDHandsonCodeBuildPj

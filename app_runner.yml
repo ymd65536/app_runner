@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: cicd_handson
+Parameters:
+  PjName:
+    Type: String
+    Default: cicdhandson
+Resources:
+  CICDHandson:
+    Type: AWS::AppRunner::Service
+    Properties:
+      InstanceConfiguration:
+        Cpu: "1 vCPU"
+        Memory: "2 GB"
+      ServiceName: !Sub "${PjName}"
+      SourceConfiguration:
+        AutoDeploymentsEnabled: true
+        ImageRepository:
+          ImageConfiguration:
+            Port: "80"
+          ImageIdentifier:
+            !Join [":", [!ImportValue CICDHandsonECRImageURL, "latest"]]
+          ImageRepositoryType: ECR
+        AuthenticationConfiguration:
+          AccessRoleArn: !GetAtt CICDHandsonAppRunnerIAMRole.Arn
+      Tags:
+        - Key: Name
+          Value: cicd_handson
+  CICDHandsonAppRunnerIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: iam-role-app-runner
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - build.apprunner.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+
+      Tags:
+        - Key: Name
+          Value: !Sub "${PjName}"

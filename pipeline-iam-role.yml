@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: cicd_handson
+Parameters:
+  PjName:
+    Type: String
+    Default: cicdhandson
+Resources:
+  CICDHandsonCodePipelineIAMPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "codecommit:CancelUploadArchive"
+              - "codecommit:GetBranch"
+              - "codecommit:GetCommit"
+              - "codecommit:GetRepository"
+              - "codecommit:GetUploadArchiveStatus"
+              - "codecommit:UploadArchive"
+            Resource:
+              - "*"
+          - Effect: Allow
+            Action:
+              - "codebuild:BatchGetBuilds"
+              - "codebuild:StartBuild"
+            Resource:
+              - "*"
+          - Effect: Allow
+            Action:
+              - "s3:PutObject"
+              - "s3:GetObject"
+              - "s3:GetObjectVersion"
+              - "s3:GetBucketAcl"
+              - "s3:GetBucketLocation"
+            Resource:
+              - !Join
+                - ""
+                - - !ImportValue CICDHandsonBucketArn
+                  - "/*"
+              - !ImportValue CICDHandsonBucketArn
+      ManagedPolicyName: iam-policy-codepipeline
+  CICDHandsonCodePipelineIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - !Ref CICDHandsonCodePipelineIAMPolicy
+      RoleName: iam-role-codepipeline
+      Tags:
+        - Key: Name
+          Value: !Sub "${PjName}"
+Outputs:
+  CodePipelineIAMRole:
+    Value: !GetAtt CICDHandsonCodePipelineIAMRole.Arn
+    Export:
+      Name: CodePipelineIAMRoleArn
+
+  CodePipelineIAMPolicy:
+    Value: !Ref CICDHandsonCodePipelineIAMPolicy
+    Export:
+      Name: CodePipelineIAMPolicyArn

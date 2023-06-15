@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create IAM User
+Resources:
+  IAMUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: CI-CD-HandsonUser
+      ManagedPolicyArns: ["arn:aws:iam::aws:policy/AdministratorAccess"]
+  AccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      Status: Active
+      UserName: !Ref IAMUser
+
+Outputs:
+  IAMUserName:
+    Value: !Ref IAMUser
+    Export:
+      Name: CI-CD-HandsonUser
+  AccessKeyId:
+    Value: !Ref AccessKey
+  SecretAccessKey:
+    Value: !GetAtt AccessKey.SecretAccessKey

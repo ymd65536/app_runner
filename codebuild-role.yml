@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "CodeBuild IAM Role"
+Parameters:
+  PjName:
+    Type: String
+    Default: cicdhandson
+
+Resources:
+  CiCdHandsonCodeBuildRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: CiCdHandsonCodeBuildRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "codebuild.amazonaws.com"
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - !Ref CiCdHandsonCodeBuildPolicy
+      Tags:
+        - Key: Name
+          Value: !Sub "${PjName}"
+  CiCdHandsonCodeBuildPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: codebuild-role
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "ecr:BatchCheckLayerAvailability"
+            Resource:
+              - !ImportValue CICDHandsonECRImageArn
+          - Effect: Allow
+            Action:
+              - "ecr:CompleteLayerUpload"
+              - "ecr:InitiateLayerUpload"
+              - "ecr:UploadLayerPart"
+              - "ecr:PutImage"
+            Resource:
+              - !ImportValue CICDHandsonECRImageArn
+          - Effect: Allow
+            Action:
+              - "ecr:GetAuthorizationToken"
+            Resource:
+              - "*"
+          - Effect: Allow
+            Action:
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+              - "logs:CreateLogGroup"
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "s3:PutObject"
+              - "s3:GetObject"
+              - "s3:GetObjectVersion"
+              - "s3:GetBucketAcl"
+              - "s3:GetBucketLocation"
+            Resource:
+              - !Join
+                - ""
+                - - !ImportValue CICDHandsonBucketArn
+                  - "/*"
+              - !ImportValue CICDHandsonBucketArn
+Outputs:
+  CiCdHandsonCodeBuildRoleName:
+    Value: !Ref CiCdHandsonCodeBuildRole
+    Export:
+      Name: CodeBuildRoleName
