@@ -76,11 +76,7 @@ aws cloudformation deploy --stack-name codecommit --template-file ./codecommit.y
 Desktop上にCodeCommitのリポジトリをcloneします。
 
 ```sh
-cd ~/Desktop
-```
-
-```sh
-git clone codecommit::ap-northeast-1://app_user@cicdhandson
+git clone codecommit::ap-northeast-1://app_user@cicdhandson ~/Desktop/cicdhandson
 ```
 
 ディレクトリを移動します。
@@ -130,14 +126,6 @@ dockerfileを`app_user`リポジトリにコピーします。
 cp ~/Desktop/app_runner/dockerfile ~/Desktop/cicdhandson/
 ```
 
-### app.py　を追加
-
-`app.py`を`app_user`リポジトリにコピーします。
-
-```sh
-cp ~/Desktop/app_runner/app.py ~/Desktop/cicdhandson/
-```
-
 ### リモートリポジトリを更新する
 
 CodeCommitのリモートリポジトリにdockerfileをpushします。
@@ -151,7 +139,7 @@ git push --set-upstream origin app_runner
 
 ### CodeBuild用 S3バケットの作成
 
-`aws_happy_code`リポジトリでターミナルを開き、part3にディレクトリを変更します。
+app_runnerリポジトリに移動します。
 
 ```sh
 cd ~/Desktop/app_runner
@@ -173,74 +161,107 @@ aws cloudformation deploy --stack-name ecr --template-file ./ecr.yml --tags Name
 
 ### ハンズオンで利用するIAM Roleを作成する
 
-以下のコマンドを実行してCodeBuild用のIAMロールを作成します。
+以下のコマンドを実行してIAMロールを作成します。
 
 ```sh
-aws cloudformation deploy --stack-name codebuild-iam-role --template-file ./codebuild-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile app_user
+aws cloudformation deploy --stack-name codebuild-iam-role --template-file ./codebuild-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile yamada999 && aws cloudformation deploy --stack-name event-bridge-iam-role --template-file ./event-bridge-iam-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile yamada999 && aws cloudformation deploy --stack-name pipeline-iam-role --template-file ./pipeline-iam-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile yamada999
+
 ```
 
-以下のコマンドを実行して Event Bridge用のIAMロールを作成します。
-
-```sh
-aws cloudformation deploy --stack-name event-bridge-iam-role --template-file ./event-bridge-iam-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile app_user
-```
-
-以下のコマンドを実行して CodePipeline用のIAMロールを作成します。
-
-```sh
-aws cloudformation deploy --stack-name pipeline-iam-role --template-file ./pipeline-iam-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile app_user
-```
-
-### CodeBuildのプロジェクトを作成する
-
-以下のコマンドを実行してCodeBuildのプロジェクトを作成します。
-
-```sh
-aws cloudformation deploy --stack-name code-build --template-file ./code-build.yml --tags Name=cicdhandson --profile app_user
-```
-
-### CodePipeline の環境構築
+### CodePipeline を構築
 
 以下のコマンドを実行してCodePipelineのを構築します。
 
 ```sh
-aws cloudformation deploy --stack-name pipeline --template-file ./pipeline.yml --tags Name=cicdhandson --profile app_user
+aws cloudformation deploy --stack-name code-build --template-file ./code-build.yml --tags Name=cicdhandson --profile yamada999 && aws cloudformation deploy --stack-name pipeline --template-file ./pipeline.yml --tags Name=cicdhandson --profile yamada999
 ```
 
 ### プルリクエストを作成する
 
-環境構築は以上となります。CodeCommitでプルリクエストを作成してみます。
+環境構築は以上となります。CodeCommitでプルリクエストを作成する為に以下のコマンドを実行します。
 
 ```sh
-aws codecommit create-pull-request --title "new pull request" --description "App Runner ci/cd" --targets repositoryName=cicdhandson,sourceReference=app_runner --profile app_user
-```
-
-プルリクエストIDを環境変数に保存します。
-
-```sh
-PULL_REQUEST_ID=`aws codecommit list-pull-requests --profile app_user --pull-request-status OPEN --repository-name cicdhandson --query 'pullRequestIds' --output text` && echo $PULL_REQUEST_ID
-```
-
-コミットIDを環境変数に保存します。
-
-```sh
-COMMITID=`aws codecommit get-branch --repository-name cicdhandson --branch-name app_runner --profile app_user --query 'branch.commitId' --output text` && echo $COMMITID
+aws codecommit create-pull-request --title "new pull request" --description "App Runner ci/cd" --targets repositoryName=cicdhandson,sourceReference=app_runner --profile yamada999 && PULL_REQUEST_ID=`aws codecommit list-pull-requests --profile yamada999 --pull-request-status OPEN --repository-name cicdhandson --query 'pullRequestIds' --output text` && echo $PULL_REQUEST_ID && COMMITID=`aws codecommit get-branch --repository-name cicdhandson --branch-name app_runner --profile yamada999 --query 'branch.commitId' --output text` && echo $COMMITID
 ```
 
 ### ブランチをマージする
 
+プルリクエストをマージします。
+
 ```sh
-aws codecommit merge-pull-request-by-fast-forward --pull-request-id $PULL_REQUEST_ID --source-commit-id $COMMITID --repository-name cicdhandson --profile app_user
+aws codecommit merge-pull-request-by-fast-forward --pull-request-id $PULL_REQUEST_ID --source-commit-id $COMMITID --repository-name cicdhandson --profile yamada999
+```
+
+結果
+
+```json
+{
+    "pullRequest": {
+        "pullRequestId": "11",
+        "title": "new pull request",
+        "description": "App Runner ci/cd",
+        "lastActivityDate": "2023-06-15T20:25:04.181000+09:00",
+        "creationDate": "2023-06-15T20:23:08.812000+09:00",
+        "pullRequestStatus": "CLOSED",
+        "authorArn": "arn",
+        "pullRequestTargets": [
+            {
+                "repositoryName": "cicdhandson",
+                "sourceReference": "refs/heads/app_runner",
+                "destinationReference": "refs/heads/main",
+                "destinationCommit": "",
+                "sourceCommit": "",
+                "mergeBase": "",
+                "mergeMetadata": {
+                    "isMerged": true,
+                    "mergedBy": "arn",
+                    "mergeCommitId": "",
+                    "mergeOption": "FAST_FORWARD_MERGE"
+                }
+            }
+        ],
+        "clientRequestToken": "",
+        "revisionId": "",
+        "approvalRules": []
+    }
+}
+```
+
+### ビルドされたイメージを確認する
+
+CodeBuildでイメージがビルドされているかを確認します。
+
+```sh
+aws ecr list-images --profile yamada999 --repository-name cicdhandson --query "imageIds[*].imageDigest" --output table
+```
+
+結果
+
+```text
+-----------------------------------------------------------------------------
+|                                ListImages                                 |
++---------------------------------------------------------------------------+
+|  sha256:70f9eda4317cdce66c06fe1a699cae9bb1627cac91e1c9c6a09f6b3572fd56b4  |
++---------------------------------------------------------------------------+
 ```
 
 ### App Runnerにコンテンをデプロイする
 
 ```sh
-aws cloudformation deploy --stack-name app-runner --template-file ./app_runner.yml --tags Name=cicdhandson --profile app_user
+aws cloudformation deploy --stack-name apprunner --template-file ./app_runner.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile yamada999
 ```
+
+実行結果
+![nginx.pmg](/img/nginx.png)
 
 ## まとめ
 
-これでハンズオンは以上です。上記の構成でCodeCommit にDockerfileをおくことにより
-buildspec.ymlの設定に従ってCodeBuildでイメージをビルドできます。これでイメージをリポジトリにpushしたことをトリガーに
-CodeDeployによるデプロイやApp Runnerへのアプリケーションデプロイができます。
+これでハンズオンは以上です。App Runner 今回紹介した以外にも使い方があります。もちろん、その中にはもっと簡単にできる方法がありますが
+この記事ではイメージをリポジトリにpushしたことをトリガーにApp Runnerへアプリケーションデプロイする方法を紹介しました。
+
+なお、本番用にデプロイする場合は考慮ずべきことも多く、例えば、IP制限を実行することも導入した際には課題として挙がる可能性があります。
+今年の初めまではIP制限に対応していませんでしたが、現在(2023年6月)はWAFに対応しており、IP制限を実行できるようになっています。
+
+これからの進化に期待できそうなサービスなので今後の進化に期待です。
+
+## おわり
