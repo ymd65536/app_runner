@@ -24,7 +24,7 @@ Amazon ECSのように専門用語と言われるようなものは特にあり�
 
 EC2,ECS,App Runnerの違いを簡単に表した図ですが、以下のAWS Startup CommunityのTweetが参考になります。
 
-<https://twitter.com/startups_on_aws/status/1501153315396399104?s=20>
+https://twitter.com/startups_on_aws/status/1501153315396399104?s=20
 
 公式の`よくあるQA`では以下のように語られています。
 
@@ -114,7 +114,7 @@ git checkout -b app_runner
 ### buildspec.yamlを作成する
 
 CodeBuildで利用する設定ファイル(buildspec.yml)を作成します。
-part3ディレクトリにあるbuildspec.ymlを`app_user`リポジトリにコピーします。
+app_runnerリポジトリにある`buildspec.yml`を`cicdhandson`リポジトリにコピーします。
 
 ```sh
 cp ~/Desktop/app_runner/buildspec.yml ~/Desktop/cicdhandson/
@@ -122,7 +122,7 @@ cp ~/Desktop/app_runner/buildspec.yml ~/Desktop/cicdhandson/
 
 ### dockerfileを作成する
 
-dockerfileを`app_user`リポジトリにコピーします。
+dockerfileを`cicdhandson`リポジトリにコピーします。
 
 ```sh
 cp ~/Desktop/app_runner/dockerfile ~/Desktop/cicdhandson/
@@ -141,10 +141,10 @@ git push --set-upstream origin app_runner
 
 ### CodeBuild用 S3バケットの作成
 
-app_runnerリポジトリに移動します。
+cicdhandsonリポジトリに移動します。
 
 ```sh
-cd ~/Desktop/app_runner
+cd ~/Desktop/cicdhandson
 ```
 
 以下のコマンドで`s3.yml`をCloudFormationで実行します。
@@ -247,7 +247,7 @@ aws ecr list-images --profile app_user --repository-name cicdhandson --query "im
 +---------------------------------------------------------------------------+
 ```
 
-### App Runnerにコンテンをデプロイする
+### App Runnerにコンテナをデプロイする
 
 ```sh
 aws cloudformation deploy --stack-name apprunner --template-file ./app_runner.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile app_user
@@ -261,7 +261,7 @@ aws cloudformation deploy --stack-name apprunner --template-file ./app_runner.ym
 これでハンズオンは以上です。App Runnerは今回紹介した以外にも違う使い方があります。もちろん、その中にはもっと簡単にできる方法がありますが
 この記事ではイメージをリポジトリにpushしたことをトリガーにApp Runnerへアプリケーションデプロイする方法を紹介しました。
 
-なお、本番用にデプロイする場合は考慮ずべきことも多く、例えば、IP制限を実行することも導入した際には課題として挙がる可能性があります。
+なお、本番用にデプロイする場合は考慮すべきことも多く、例えば、IP制限を実行することも導入した際には課題として挙がる可能性があります。
 今年の初めまではIP制限に対応していませんでしたが、現在(2023年6月)はWAFに対応しており、IP制限を実行できるようになっています。
 
 これからの進化に期待できそうなサービスなので今後の進化に期待です。
