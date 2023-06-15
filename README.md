@@ -26,7 +26,7 @@ EC2,ECS,App Runnerの違いを簡単に表した図ですが、以下のAWS Star
 
 <https://twitter.com/startups_on_aws/status/1501153315396399104?s=20>
 
-公式では`よくあるQA`では以下のように語られています。
+公式の`よくあるQA`では以下のように語られています。
 
 > また、アプリケーションは AWS が保守、運用するインフラストラクチャ上で稼働するので、セキュリティパッチの自動化や暗号化など、セキュリティおよびコンプライアンス上のベストプラクティスも提供されます。
 
@@ -41,6 +41,8 @@ EC2,ECS,App Runnerの違いを簡単に表した図ですが、以下のAWS Star
 > アプリケーションがアイドル状態のときは、プロビジョニングされたコンテナインスタンスに対してメモリの GB 単位で支払うことによってアプリケーションがウォームに保たれ、コールドスタートが不要になります。リクエストがあると、アプリケーションはミリ秒単位で応答し、アプリケーションがリクエストを処理している間にアクティブなコンテナインスタンスが消費した vCPU およびメモリ分の料金を支払います。
 
 [参考](https://aws.amazon.com/jp/apprunner/pricing/)
+
+## 実際に使ってみよう
 
 ## 今回扱うサービス
 
@@ -164,7 +166,7 @@ aws cloudformation deploy --stack-name ecr --template-file ./ecr.yml --tags Name
 以下のコマンドを実行してIAMロールを作成します。
 
 ```sh
-aws cloudformation deploy --stack-name codebuild-iam-role --template-file ./codebuild-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile yamada999 && aws cloudformation deploy --stack-name event-bridge-iam-role --template-file ./event-bridge-iam-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile yamada999 && aws cloudformation deploy --stack-name pipeline-iam-role --template-file ./pipeline-iam-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile yamada999
+aws cloudformation deploy --stack-name codebuild-iam-role --template-file ./codebuild-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile app_user && aws cloudformation deploy --stack-name event-bridge-iam-role --template-file ./event-bridge-iam-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile app_user && aws cloudformation deploy --stack-name pipeline-iam-role --template-file ./pipeline-iam-role.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile app_user
 
 ```
 
@@ -173,7 +175,7 @@ aws cloudformation deploy --stack-name codebuild-iam-role --template-file ./code
 以下のコマンドを実行してCodePipelineのを構築します。
 
 ```sh
-aws cloudformation deploy --stack-name code-build --template-file ./code-build.yml --tags Name=cicdhandson --profile yamada999 && aws cloudformation deploy --stack-name pipeline --template-file ./pipeline.yml --tags Name=cicdhandson --profile yamada999
+aws cloudformation deploy --stack-name code-build --template-file ./code-build.yml --tags Name=cicdhandson --profile app_user && aws cloudformation deploy --stack-name pipeline --template-file ./pipeline.yml --tags Name=cicdhandson --profile app_user
 ```
 
 ### プルリクエストを作成する
@@ -181,7 +183,7 @@ aws cloudformation deploy --stack-name code-build --template-file ./code-build.y
 環境構築は以上となります。CodeCommitでプルリクエストを作成する為に以下のコマンドを実行します。
 
 ```sh
-aws codecommit create-pull-request --title "new pull request" --description "App Runner ci/cd" --targets repositoryName=cicdhandson,sourceReference=app_runner --profile yamada999 && PULL_REQUEST_ID=`aws codecommit list-pull-requests --profile yamada999 --pull-request-status OPEN --repository-name cicdhandson --query 'pullRequestIds' --output text` && echo $PULL_REQUEST_ID && COMMITID=`aws codecommit get-branch --repository-name cicdhandson --branch-name app_runner --profile yamada999 --query 'branch.commitId' --output text` && echo $COMMITID
+aws codecommit create-pull-request --title "new pull request" --description "App Runner ci/cd" --targets repositoryName=cicdhandson,sourceReference=app_runner --profile app_user && PULL_REQUEST_ID=`aws codecommit list-pull-requests --profile app_user --pull-request-status OPEN --repository-name cicdhandson --query 'pullRequestIds' --output text` && echo $PULL_REQUEST_ID && COMMITID=`aws codecommit get-branch --repository-name cicdhandson --branch-name app_runner --profile app_user --query 'branch.commitId' --output text` && echo $COMMITID
 ```
 
 ### ブランチをマージする
@@ -189,7 +191,7 @@ aws codecommit create-pull-request --title "new pull request" --description "App
 プルリクエストをマージします。
 
 ```sh
-aws codecommit merge-pull-request-by-fast-forward --pull-request-id $PULL_REQUEST_ID --source-commit-id $COMMITID --repository-name cicdhandson --profile yamada999
+aws codecommit merge-pull-request-by-fast-forward --pull-request-id $PULL_REQUEST_ID --source-commit-id $COMMITID --repository-name cicdhandson --profile app_user
 ```
 
 結果
@@ -232,7 +234,7 @@ aws codecommit merge-pull-request-by-fast-forward --pull-request-id $PULL_REQUES
 CodeBuildでイメージがビルドされているかを確認します。
 
 ```sh
-aws ecr list-images --profile yamada999 --repository-name cicdhandson --query "imageIds[*].imageDigest" --output table
+aws ecr list-images --profile app_user --repository-name cicdhandson --query "imageIds[*].imageDigest" --output table
 ```
 
 結果
@@ -248,15 +250,15 @@ aws ecr list-images --profile yamada999 --repository-name cicdhandson --query "i
 ### App Runnerにコンテンをデプロイする
 
 ```sh
-aws cloudformation deploy --stack-name apprunner --template-file ./app_runner.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile yamada999
+aws cloudformation deploy --stack-name apprunner --template-file ./app_runner.yml --tags Name=cicdhandson --capabilities CAPABILITY_NAMED_IAM --profile app_user
 ```
 
 実行結果
-![nginx.pmg](/img/nginx.png)
+![nginx.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/527543/0813f8dc-a395-b0d1-f070-a112aefc6d1a.png)
 
 ## まとめ
 
-これでハンズオンは以上です。App Runner 今回紹介した以外にも使い方があります。もちろん、その中にはもっと簡単にできる方法がありますが
+これでハンズオンは以上です。App Runnerは今回紹介した以外にも違う使い方があります。もちろん、その中にはもっと簡単にできる方法がありますが
 この記事ではイメージをリポジトリにpushしたことをトリガーにApp Runnerへアプリケーションデプロイする方法を紹介しました。
 
 なお、本番用にデプロイする場合は考慮ずべきことも多く、例えば、IP制限を実行することも導入した際には課題として挙がる可能性があります。
