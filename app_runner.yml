@@ -18,7 +18,7 @@ Resources:
           ImageConfiguration:
             Port: "80"
           ImageIdentifier:
-            !Join [":", [!ImportValue CICDHandsonECRImageURL, "latest"]]
+            !Join [":", [!ImportValue CICDHandsonECRRepositoryUri, "latest"]]
           ImageRepositoryType: ECR
         AuthenticationConfiguration:
           AccessRoleArn: !GetAtt CICDHandsonAppRunnerIAMRole.Arn
